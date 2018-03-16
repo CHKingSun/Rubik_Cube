@@ -18,6 +18,7 @@ window.onload = function () {
         scene = new THREE.Scene();
 
         group = new THREE.Group();
+        group.position.set(0, 0, -depth/2);
 
         camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, depth);
         camera.lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0));
@@ -33,13 +34,15 @@ window.onload = function () {
     })();
 
     var controller = {
-        translate: new THREE.Vector3(0, 0, -depth/2),
-        rotate: new THREE.Matrix4(),
         scale: 1,
         rx: 0, ry: 0,
         tx: 0, ty: 0,
-        isPressed: false
+        mouse: new THREE.Vector2(),
+        isIntersect: false,
+        isPressed: false,
+        isRotate: false
     };
+    var per_position = [];
 
     (function () { //createCubes
         var length = 50;
@@ -329,38 +332,186 @@ window.onload = function () {
 
         ];
 
-        cubes.forEach(function (item) {
+        cubes.forEach(function (item, index) {
             group.add(new THREE.Mesh(Cube.cube(item), material));
+            group.children[index].name = index;
+            per_position.push(item.position);
         });
         scene.add(group);
+        // console.log(group);
     })();
 
-    var debug = 5;
     (function update() {
-        var s = new THREE.Matrix4();
         if(canvas.width > canvas.height){
-            s.multiplyScalar(controller.scale * canvas.height / depth);
+            group.scale.setScalar(controller.scale * canvas.height / depth);
         } else {
-            s.multiplyScalar(controller.scale * canvas.width / depth);
-        }
-        group.matrix.copy(new THREE.Matrix4().setPosition(controller.translate).
-                            multiply((s)));
-        if(debug) {
-            debug--;
-            console.log(s.multiply(new THREE.Matrix4().setPosition(controller.translate)));
-            console.log(group.matrix);
+            group.scale.setScalar(controller.scale * canvas.width / depth);
         }
         group.updateMatrix();
         render.render(scene, camera);
         window.requestAniFrame(update);
     })();
 
+    var rotateLayer = {
+        F: 0, //%9 == 1||2||3
+        M: 1, //%9 == 4||5||6
+        B: 2, //%9 == 7||8||9
+        L: 3, //%3 == 0
+        V: 4, //纵向 %3 == 1
+        R: 5, //%3 == 2
+        D: 6, //<9
+        H: 7, //横向 9=><18
+        U: 8 //>=18
+    };
+    
+    function moveCube(layer, dir) {
+        if(!controller.isRotate){
+            controller.isRotate = true;
+            var cubeIndex, axis;
+            if(dir != -1) dir = 1;
+            else dir = -1;
+            switch (layer){
+                case rotateLayer.F:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 9 === 0 || index % 9 === 1 || index % 9 === 2;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 9 === 0 || item.name % 9 === 1 || item.name % 9 === 2;
+                    });
+                    axis = new THREE.Vector3(0, 0, -dir);
+                    break;
+                case rotateLayer.M:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 9 === 3 || index % 9 === 4 || index % 9 === 5;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 9 === 3 || item.name % 9 === 4 || item.name % 9 === 5;
+                    });
+                    axis = new THREE.Vector3(0, 0, -dir);
+                    break;
+                case rotateLayer.B:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 9 === 6 || index % 9 === 7 || index % 9 === 8;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 9 === 6 || item.name  % 9 === 7 || item.name  % 9 === 8;
+                    });
+                    axis = new THREE.Vector3(0, 0, dir);
+                    break;
+                case rotateLayer.L:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 3 === 0;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 3 === 0;
+                    });
+                    axis = new THREE.Vector3(-dir, 0, 0);
+                    break;
+                case rotateLayer.V:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 3 === 1;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 3 === 1;
+                    });
+                    axis = new THREE.Vector3(-dir, 0, 0);
+                    break;
+                case rotateLayer.R:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index % 3 === 2;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name % 3 === 2;
+                    });
+                    axis = new THREE.Vector3(dir, 0, 0);
+                    break;
+                case rotateLayer.D:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index < 9;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name < 9;
+                    });
+                    axis = new THREE.Vector3(0, -dir, 0);
+                    break;
+                case rotateLayer.H:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index >= 9 && index < 18;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name >= 9 && item.name < 18;
+                    });
+                    axis = new THREE.Vector3(0, -dir, 0);
+                    break;
+                case rotateLayer.U:
+                    // cubeIndex = group.children.filter(function (value, index) {
+                    //     return index >= 18;
+                    // });
+                    cubeIndex = group.children.filter(function (item) {
+                        return item.name >= 18;
+                    });
+                    axis = new THREE.Vector3(0, dir, 0);
+                    break;
+            }
+            if(cubeIndex){
+                (function move(cubeIndex, axis, startTime, lastTime, currentTime) {
+                    if(startTime === 0){
+                        window.requestAniFrame(function (current) {
+                            // console.log(current + '\t' + startTime);
+                            move(cubeIndex, axis, current, current, current);
+                        });
+                        return;
+                    }
+                    else if(currentTime - startTime >= 600) {
+                        var angle = Math.PI * (startTime + 600 - lastTime) / 1200; //3*time/20 * PI/180
+                        cubeIndex.forEach(function (item) {
+                            item.rotateOnWorldAxis(axis, angle);
+                        });
+                        cubeIndex.forEach(function (item) {
+                            var center = per_position[item.name].clone().applyAxisAngle(axis, Math.PI/2);
+                            for (var i = 0; i < group.children.length; ++i){
+                                if(new THREE.Vector3().subVectors(center, per_position[i]).length() <= 1){
+                                    // console.log({
+                                    //    center: center,
+                                    //    position: per_position[i],
+                                    //    item: item,
+                                    //    index: i,
+                                    //    children: group.children[i]
+                                    // });
+                                    item.name = i;
+                                    // console.log(group.children[i]);
+                                    break;
+                                }
+                            }
+                        });
+                        controller.isRotate = false;
+                        return;
+                    }
+                    else {
+                        var angle = Math.PI * (currentTime - lastTime) / 1200;
+                        cubeIndex.forEach(function (item) {
+                            item.rotateOnWorldAxis(axis, angle);
+                        });
+                    }
+                    window.requestAniFrame(function (current) {
+                        // console.log(current + '\t' + startTime);
+                        move(cubeIndex, axis, startTime, currentTime, current);
+                    });
+                })(cubeIndex, axis, 0);
+            }
+        }
+    }
+
     function onMouseDown(event) {
         if(event.which === 1 || event.which === 0){
+            moveCube(Math.floor(Math.random()*8), 1);
             controller.rx = event.x;
             controller.ry = event.y;
+            // controller.mouse.x = ( event.clientX / canvas.width) * 2 - 1;
+            // controller.mouse.y = - ( event.clientY / canvas.height) * 2 + 1;
             controller.isPressed = true;
         } else if(event.which === 3){
+            moveCube(Math.floor(Math.random()*8), -1);
             controller.tx = event.x;
             controller.ty = event.y;
             controller.isPressed = true;
@@ -371,14 +522,13 @@ window.onload = function () {
             if(event.which === 1 || event.which === 0){
                 controller.rx = event.x - controller.rx;
                 controller.ry = event.y - controller.ry;
-                var angle = controller.rx * controller.rx - controller.ry * controller.ry;
-                if(angle > 10){ //位移太小忽略
-                    angle = Math.atan(Math.sqrt(angle / 2)) * 3;
-                    if(controller.rx / controller.ry >= 6) controller.ry = 0;
-                    else if(controller.ry / controller.rx >= 6) controller.rx = 0;
-                    controller.rotate = new THREE.Matrix4().makeRotationAxis(
-                        new THREE.Vector3(controller.ry, controller.rx, 0), angle).multiply(controller.rotate);
-                    // group.rotateOnAxis(new THREE.Vector3(controller.ry, controller.rx, 0).normalize(), angle);
+                var angle = controller.rx * controller.rx + controller.ry * controller.ry;
+                // console.log(angle);
+                if(angle >= 10){ //位移太小忽略
+                    angle = Math.atan(Math.sqrt(angle / 2)) / 9.6;
+                    if(controller.rx/controller.ry >= 6 || controller.rx/controller.ry <= -6) controller.ry = 0;
+                    else if(controller.ry/controller.rx >= 6 || controller.ry/controller.rx <= -6) controller.rx = 0;
+                    group.rotateOnWorldAxis(new THREE.Vector3(controller.ry, controller.rx, 0).normalize(), angle);
                     controller.rx = event.x;
                     controller.ry = event.y;
                 } else {
@@ -386,7 +536,7 @@ window.onload = function () {
                     controller.ry = event.y - controller.ry;
                 }
             } else if(event.which === 3){
-                controller.translate.add(new THREE.Vector3(controller.tx, -controller.ty, 0));
+                group.position.add(new THREE.Vector3(event.x - controller.tx, controller.ty - event.y, 0));
 
                 controller.tx = event.x;
                 controller.ty = event.y;
@@ -394,8 +544,7 @@ window.onload = function () {
         }
     }
     function onMouseUp() {
-        console.log(group);
-        console.log(new THREE.Matrix4().setPosition(controller.translate).multiply(controller.rotate.multiply(group.matrix)));
+        // console.log(group);
         controller.isPressed = false;
     }
 

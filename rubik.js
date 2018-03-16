@@ -37,8 +37,8 @@ window.onload = function () {
         scale: 1,
         rx: 0, ry: 0,
         tx: 0, ty: 0,
-        mouse: new THREE.Vector2(),
         isIntersect: false,
+        intersect: [[], []],
         isPressed: false,
         isRotate: false
     };
@@ -347,112 +347,51 @@ window.onload = function () {
         } else {
             group.scale.setScalar(controller.scale * canvas.width / depth);
         }
-        group.updateMatrix();
         render.render(scene, camera);
         window.requestAniFrame(update);
     })();
 
-    var rotateLayer = {
-        F: 0, //%9 == 1||2||3
-        M: 1, //%9 == 4||5||6
-        B: 2, //%9 == 7||8||9
-        L: 3, //%3 == 0
-        V: 4, //纵向 %3 == 1
-        R: 5, //%3 == 2
-        D: 6, //<9
-        H: 7, //横向 9=><18
-        U: 8 //>=18
+    var rotateNormal = {
+        F: new THREE.Vector3(0, 0, 1),
+        B: new THREE.Vector3(0, 0, -1),
+        D: new THREE.Vector3(0, -1, 0),
+        U: new THREE.Vector3(0, 1, 0),
+        L: new THREE.Vector3(-1, 0, 0),
+        R: new THREE.Vector3(1, 0, 0)
+    };
+    var isFloor = {
+        F: function (item) {
+            return item.name % 9 === 0 || item.name % 9 === 1 || item.name % 9 === 2;
+        },
+        M: function (item) {
+            return item.name % 9 === 3 || item.name % 9 === 4 || item.name % 9 === 5;
+        },
+        B: function (item) {
+            return item.name % 9 === 6 || item.name  % 9 === 7 || item.name  % 9 === 8;
+        },
+        L: function (item) {
+            return item.name % 3 === 0;
+        },
+        V: function (item) {
+            return item.name % 3 === 1;
+        },
+        R: function (item) {
+            return item.name % 3 === 2;
+        },
+        D: function (item) {
+            return item.name < 9;
+        },
+        H: function (item) {
+            return item.name >= 9 && item.name < 18;
+        },
+        U: function (item) {
+            return item.name >= 18;
+        }
     };
     
-    function moveCube(layer, dir) {
+    function moveCube(cubeIndex, axis) {
         if(!controller.isRotate){
             controller.isRotate = true;
-            var cubeIndex, axis;
-            if(dir != -1) dir = 1;
-            else dir = -1;
-            switch (layer){
-                case rotateLayer.F:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 9 === 0 || index % 9 === 1 || index % 9 === 2;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 9 === 0 || item.name % 9 === 1 || item.name % 9 === 2;
-                    });
-                    axis = new THREE.Vector3(0, 0, -dir);
-                    break;
-                case rotateLayer.M:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 9 === 3 || index % 9 === 4 || index % 9 === 5;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 9 === 3 || item.name % 9 === 4 || item.name % 9 === 5;
-                    });
-                    axis = new THREE.Vector3(0, 0, -dir);
-                    break;
-                case rotateLayer.B:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 9 === 6 || index % 9 === 7 || index % 9 === 8;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 9 === 6 || item.name  % 9 === 7 || item.name  % 9 === 8;
-                    });
-                    axis = new THREE.Vector3(0, 0, dir);
-                    break;
-                case rotateLayer.L:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 3 === 0;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 3 === 0;
-                    });
-                    axis = new THREE.Vector3(-dir, 0, 0);
-                    break;
-                case rotateLayer.V:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 3 === 1;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 3 === 1;
-                    });
-                    axis = new THREE.Vector3(-dir, 0, 0);
-                    break;
-                case rotateLayer.R:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index % 3 === 2;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name % 3 === 2;
-                    });
-                    axis = new THREE.Vector3(dir, 0, 0);
-                    break;
-                case rotateLayer.D:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index < 9;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name < 9;
-                    });
-                    axis = new THREE.Vector3(0, -dir, 0);
-                    break;
-                case rotateLayer.H:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index >= 9 && index < 18;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name >= 9 && item.name < 18;
-                    });
-                    axis = new THREE.Vector3(0, -dir, 0);
-                    break;
-                case rotateLayer.U:
-                    // cubeIndex = group.children.filter(function (value, index) {
-                    //     return index >= 18;
-                    // });
-                    cubeIndex = group.children.filter(function (item) {
-                        return item.name >= 18;
-                    });
-                    axis = new THREE.Vector3(0, dir, 0);
-                    break;
-            }
             if(cubeIndex){
                 (function move(cubeIndex, axis, startTime, lastTime, currentTime) {
                     if(startTime === 0){
@@ -471,15 +410,7 @@ window.onload = function () {
                             var center = per_position[item.name].clone().applyAxisAngle(axis, Math.PI/2);
                             for (var i = 0; i < group.children.length; ++i){
                                 if(new THREE.Vector3().subVectors(center, per_position[i]).length() <= 1){
-                                    // console.log({
-                                    //    center: center,
-                                    //    position: per_position[i],
-                                    //    item: item,
-                                    //    index: i,
-                                    //    children: group.children[i]
-                                    // });
                                     item.name = i;
-                                    // console.log(group.children[i]);
                                     break;
                                 }
                             }
@@ -502,16 +433,24 @@ window.onload = function () {
         }
     }
 
+    function isIntersect(mouse) {
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        return raycaster.intersectObjects(group.children);
+    }
+
     function onMouseDown(event) {
         if(event.which === 1 || event.which === 0){
-            moveCube(Math.floor(Math.random()*8), 1);
+            // moveCube(Math.floor(Math.random()*8), 1);
             controller.rx = event.x;
             controller.ry = event.y;
-            // controller.mouse.x = ( event.clientX / canvas.width) * 2 - 1;
-            // controller.mouse.y = - ( event.clientY / canvas.height) * 2 + 1;
             controller.isPressed = true;
+            var mouse = new THREE.Vector2();
+            mouse.x = ( event.clientX / canvas.width) * 2 - 1;
+            mouse.y = - ( event.clientY / canvas.height) * 2 + 1;
+            controller.intersect[0] = isIntersect(mouse);
         } else if(event.which === 3){
-            moveCube(Math.floor(Math.random()*8), -1);
+            // moveCube(Math.floor(Math.random()*8), -1);
             controller.tx = event.x;
             controller.ty = event.y;
             controller.isPressed = true;
@@ -520,6 +459,14 @@ window.onload = function () {
     function onMouseMove(event) {
         if(controller.isPressed){
             if(event.which === 1 || event.which === 0){
+                if(controller.intersect[0].length > 0){
+                    var mouse = new THREE.Vector2();
+                    mouse.x = ( event.clientX / canvas.width) * 2 - 1;
+                    mouse.y = - ( event.clientY / canvas.height) * 2 + 1;
+                    var intersect = isIntersect(mouse);
+                    if(intersect.length > 0) controller.intersect[1] = intersect;
+                    return;
+                }
                 controller.rx = event.x - controller.rx;
                 controller.ry = event.y - controller.ry;
                 var angle = controller.rx * controller.rx + controller.ry * controller.ry;
@@ -545,6 +492,56 @@ window.onload = function () {
     }
     function onMouseUp() {
         // console.log(group);
+        if(controller.intersect[0].length > 0 && controller.intersect[1].length > 0){
+            // console.log(controller.intersect[1][0]);
+            var dir = controller.intersect[1][0].point.clone().sub(controller.intersect[0][0].point);
+            dir.applyQuaternion(group.quaternion.clone().inverse()).normalize();
+            // console.log(dir);
+            //近似
+            if(dir.x > 0.9) dir = rotateNormal.R;
+            else if(dir.x < -0.9) dir = rotateNormal.L;
+            else if(dir.y > 0.9) dir = rotateNormal.U;
+            else if(dir.y < -0.9) dir = rotateNormal.D;
+            else if(dir.z > 0.9) dir = rotateNormal.F;
+            else if(dir.z < -0.9) dir = rotateNormal.B;
+            else dir = false;
+
+            if(dir){
+                // console.log(group);
+                // console.log(dir);
+                var axis = controller.intersect[0][0].face.normal.clone().applyQuaternion(
+                            controller.intersect[0][0].object.quaternion).round().cross(dir);
+                // console.log(axis);
+                if(axis.equals(rotateNormal.F) || axis.equals(rotateNormal.B)){
+                    if(isFloor.F(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.F), axis);
+                    } else if(isFloor.M(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.M), axis);
+                    } else if(isFloor.B(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.B), axis);
+                    }
+                } else if(axis.equals(rotateNormal.L) || axis.equals(rotateNormal.R)){
+                    if(isFloor.L(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.L), axis);
+                    } else if(isFloor.V(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.V), axis);
+                    } else if(isFloor.R(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.R), axis);
+                    }
+                } else if(axis.equals(rotateNormal.D) || axis.equals(rotateNormal.U)){
+                    if(isFloor.D(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.D), axis);
+                    } else if(isFloor.H(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.H), axis);
+                    } else if(isFloor.U(controller.intersect[0][0].object)){
+                        moveCube(group.children.filter(isFloor.U), axis);
+                    }
+                } else console.log(axis);
+            }
+
+            controller.intersect[0] = [];
+            controller.intersect[1] = [];
+        }
         controller.isPressed = false;
     }
 

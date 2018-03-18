@@ -343,9 +343,9 @@ window.onload = function () {
 
     (function update() {
         if(canvas.width > canvas.height){
-            group.scale.setScalar(controller.scale * canvas.height / depth);
+            group.scale.setScalar(controller.scale * canvas.height / (1.5 * depth));
         } else {
-            group.scale.setScalar(controller.scale * canvas.width / depth);
+            group.scale.setScalar(controller.scale * canvas.width / (1.5 * depth));
         }
         render.render(scene, camera);
         window.requestAniFrame(update);
@@ -436,6 +436,7 @@ window.onload = function () {
     function isIntersect(mouse) {
         var raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
+        // console.log(mouse);
         return raycaster.intersectObjects(group.children);
     }
 
@@ -491,7 +492,7 @@ window.onload = function () {
         }
     }
     function onMouseUp() {
-        // console.log(group);
+        // console.log(controller.intersect);
         if(controller.intersect[0].length > 0 && controller.intersect[1].length > 0){
             // console.log(controller.intersect[1][0]);
             var dir = controller.intersect[1][0].point.clone().sub(controller.intersect[0][0].point);
@@ -548,6 +549,22 @@ window.onload = function () {
     canvas.addEventListener("mousedown", onMouseDown, false);
     canvas.addEventListener("mousemove", onMouseMove, false);
     canvas.addEventListener("mouseup", onMouseUp, false);
+
+    canvas.addEventListener("touchstart", function (event) {
+        event.x = event.targetTouches[0].clientX;
+        event.y = event.targetTouches[0].clientY;
+        event.clientX = event.x;
+        event.clientY = event.y;
+        onMouseDown(event);
+    }, false);
+    canvas.addEventListener("touchmove", function (event) {
+        event.x = event.targetTouches[0].clientX;
+        event.y = event.targetTouches[0].clientY;
+        event.clientX = event.x;
+        event.clientY = event.y;
+        onMouseMove(event);
+    }, false);
+    canvas.addEventListener("touchend", onMouseUp, false);
 
     canvas.addEventListener("wheel", function (event) {
         if(controller.scale < 3 && event.wheelDelta > 0){

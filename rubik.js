@@ -30,6 +30,10 @@ window.onload = function () {
 
         material = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(Cube.toFace()) });
         material.map.minFilter = THREE.LinearFilter;
+        // material = new THREE.MeshBasicMaterial({ map:
+        //         new THREE.CanvasTexture(Cube.toFace(), THREE.DEFAULT_MAPPING, THREE.RepeatWrapping,
+        //         THREE.RepeatWrapping, THREE.LinearFilter, THREE.LinearMipMapLinearFilter)
+        // });
         // console.log(material);
     })();
 
@@ -436,7 +440,7 @@ window.onload = function () {
     function isIntersect(mouse) {
         var raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
-        // console.log(mouse);
+        // console.log(raycaster);
         return raycaster.intersectObjects(group.children);
     }
 
@@ -496,45 +500,54 @@ window.onload = function () {
         if(controller.intersect[0].length > 0 && controller.intersect[1].length > 0){
             // console.log(controller.intersect[1][0]);
             var dir = controller.intersect[1][0].point.clone().sub(controller.intersect[0][0].point);
-            dir.applyQuaternion(group.quaternion.clone().inverse()).normalize();
-            // console.log(dir);
+            dir.applyQuaternion(group.quaternion.clone().inverse());
+            var axis = controller.intersect[0][0].face.normal.clone().applyQuaternion(
+                controller.intersect[0][0].object.quaternion).cross(dir).normalize();
+            // console.log(axis);
             //近似
-            if(dir.x > 0.9) dir = rotateNormal.R;
-            else if(dir.x < -0.9) dir = rotateNormal.L;
-            else if(dir.y > 0.9) dir = rotateNormal.U;
-            else if(dir.y < -0.9) dir = rotateNormal.D;
-            else if(dir.z > 0.9) dir = rotateNormal.F;
-            else if(dir.z < -0.9) dir = rotateNormal.B;
-            else dir = false;
+            if(axis.x > 0.9) axis = rotateNormal.R;
+            else if(axis.x < -0.9) axis = rotateNormal.L;
+            else if(axis.y > 0.9) axis = rotateNormal.U;
+            else if(axis.y < -0.9) axis = rotateNormal.D;
+            else if(axis.z > 0.9) axis = rotateNormal.F;
+            else if(axis.z < -0.9) axis = rotateNormal.B;
+            else axis = false;
 
-            if(dir){
-                // console.log(group);
-                // console.log(dir);
-                var axis = controller.intersect[0][0].face.normal.clone().applyQuaternion(
-                            controller.intersect[0][0].object.quaternion).round().cross(dir);
+            if(axis){
                 // console.log(axis);
+                // console.log(controller.intersect[0][0].object);
+                // console.log(controller.intersect[1][0].object);
                 if(axis.equals(rotateNormal.F) || axis.equals(rotateNormal.B)){
-                    if(isFloor.F(controller.intersect[0][0].object)){
+                    if(isFloor.F(controller.intersect[0][0].object)
+                    && isFloor.F(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.F), axis);
-                    } else if(isFloor.M(controller.intersect[0][0].object)){
+                    } else if(isFloor.M(controller.intersect[0][0].object)
+                        && isFloor.M(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.M), axis);
-                    } else if(isFloor.B(controller.intersect[0][0].object)){
+                    } else if(isFloor.B(controller.intersect[0][0].object)
+                        && isFloor.B(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.B), axis);
                     }
                 } else if(axis.equals(rotateNormal.L) || axis.equals(rotateNormal.R)){
-                    if(isFloor.L(controller.intersect[0][0].object)){
+                    if(isFloor.L(controller.intersect[0][0].object)
+                        && isFloor.L(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.L), axis);
-                    } else if(isFloor.V(controller.intersect[0][0].object)){
+                    } else if(isFloor.V(controller.intersect[0][0].object)
+                        && isFloor.V(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.V), axis);
-                    } else if(isFloor.R(controller.intersect[0][0].object)){
+                    } else if(isFloor.R(controller.intersect[0][0].object)
+                        && isFloor.R(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.R), axis);
                     }
                 } else if(axis.equals(rotateNormal.D) || axis.equals(rotateNormal.U)){
-                    if(isFloor.D(controller.intersect[0][0].object)){
+                    if(isFloor.D(controller.intersect[0][0].object)
+                        && isFloor.D(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.D), axis);
-                    } else if(isFloor.H(controller.intersect[0][0].object)){
+                    } else if(isFloor.H(controller.intersect[0][0].object)
+                        && isFloor.H(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.H), axis);
-                    } else if(isFloor.U(controller.intersect[0][0].object)){
+                    } else if(isFloor.U(controller.intersect[0][0].object)
+                        && isFloor.U(controller.intersect[1][0].object)){
                         moveCube(group.children.filter(isFloor.U), axis);
                     }
                 } else console.log(axis);
